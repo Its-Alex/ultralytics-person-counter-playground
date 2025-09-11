@@ -1,0 +1,10 @@
+# Python venv
+.venv
+
+# Models
+*.pt
+
+# Movies
+*.avi
+*.mp4
+*.mkv

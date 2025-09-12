@@ -53,6 +53,11 @@ def parse_arguments():
                        default=int(os.getenv('IMGSZ', '0')),
                        help='Image size for YOLO inference (0 for original video resolution) (default: 0)')
 
+    parser.add_argument('--device',
+                       type=str,
+                       default=os.getenv('DEVICE', 'cpu'),
+                       help='Device to use for inference (cpu, cuda, cuda:0, cuda:1, etc.) (default: cpu)')
+
     args = parser.parse_args()
 
     # Check required arguments
@@ -198,7 +203,7 @@ while cap.isOpened():
         break
     
     # Detection and tracking
-    results = model.track(frame, persist=True, imgsz=inference_size)
+    results = model.track(frame, persist=True, imgsz=inference_size, device=args.device)
     
     if args.enable_window:
         # Draw counting line

@@ -39,6 +39,7 @@ VIDEO_PATH="video.mp4" \
     WINDOW_SCALE="0.5" \
     REVERSE_DIRECTION="false" \
     IMGSZ="640" \
+    DEVICE="cpu" \
     python main.py
 ```
 
@@ -53,19 +54,21 @@ python main.py \
     --window-scale 0.5 \
     --reverse-direction false \
     --imgsz 640
+    --device cuda
 ```
 
 ## Configuration
 
-| Parameter           | Description                                    | Default | Required |
-| ------------------- | ---------------------------------------------- | ------- | -------- |
-| `VIDEO_PATH`        | Path to input video file                       | -       | Yes      |
-| `LINE_START`        | Start coordinates of counting line (x,y)       | -       | Yes      |
-| `LINE_END`          | End coordinates of counting line (x,y)         | -       | Yes      |
-| `WINDOW_SCALE`      | Display scale factor for window                | 0.5     | No       |
-| `REVERSE_DIRECTION` | Reverse counting direction                     | false   | No       |
-| `ENABLE_WINDOW`     | Enable window display                          | false   | No       |
-| `IMGSZ`             | Image size for YOLO inference (0 for original) | 0       | No       |
+| Parameter           | Description                                                   | Default | Required |
+| ------------------- | ------------------------------------------------------------- | ------- | -------- |
+| `VIDEO_PATH`        | Path to input video file                                      | -       | Yes      |
+| `LINE_START`        | Start coordinates of counting line (x,y)                      | -       | Yes      |
+| `LINE_END`          | End coordinates of counting line (x,y)                        | -       | Yes      |
+| `WINDOW_SCALE`      | Display scale factor for window                               | 0.5     | No       |
+| `REVERSE_DIRECTION` | Reverse counting direction                                    | false   | No       |
+| `ENABLE_WINDOW`     | Enable window display                                         | false   | No       |
+| `IMGSZ`             | Image size for YOLO inference (0 for original)                | 0       | No       |
+| `DEVICE`            | Device to use for inference (cpu, cuda, cuda:0, cuda:1, etc.) | cpu     | No       |
 
 ## How it works
 

@@ -97,16 +97,57 @@ else:
 
 # Tracking variables
 track_history = defaultdict(lambda: [])
+bbox_history = defaultdict(lambda: [])
 crossed_ids = set()
 person_count = 0
 
-def line_intersect(p1, p2, line_start, line_end):
-    """Check if segment p1-p2 crosses the line"""
+def line_intersect_bbox(bbox1, bbox2, line_start, line_end):
+    """Check if bounding box movement crosses the line"""
     def is_counter_clockwise(A, B, C):
         return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
     
-    return is_counter_clockwise(line_start, p1, p2) != is_counter_clockwise(line_end, p1, p2) and \
-           is_counter_clockwise(line_start, line_end, p1) != is_counter_clockwise(line_start, line_end, p2)
+    def line_intersects_segment(p1, p2, line_start, line_end):
+        return is_counter_clockwise(line_start, p1, p2) != is_counter_clockwise(line_end, p1, p2) and \
+               is_counter_clockwise(line_start, line_end, p1) != is_counter_clockwise(line_start, line_end, p2)
+    
+    # Extract bbox coordinates
+    x1_prev, y1_prev, w_prev, h_prev = bbox1
+    x1_curr, y1_curr, w_curr, h_curr = bbox2
+    
+    # Convert center coordinates to corner coordinates
+    left_prev = int(x1_prev - w_prev/2)
+    right_prev = int(x1_prev + w_prev/2)
+    top_prev = int(y1_prev - h_prev/2)
+    bottom_prev = int(y1_prev + h_prev/2)
+    
+    left_curr = int(x1_curr - w_curr/2)
+    right_curr = int(x1_curr + w_curr/2)
+    top_curr = int(y1_curr - h_curr/2)
+    bottom_curr = int(y1_curr + h_curr/2)
+    
+    # Check if any edge of the bounding box crosses the line
+    bbox_edges = [
+        # Top edge
+        ((left_prev, top_prev), (left_curr, top_curr)),
+        ((right_prev, top_prev), (right_curr, top_curr)),
+        # Bottom edge
+        ((left_prev, bottom_prev), (left_curr, bottom_curr)),
+        ((right_prev, bottom_prev), (right_curr, bottom_curr)),
+        # Left edge
+        ((left_prev, top_prev), (left_curr, top_curr)),
+        ((left_prev, bottom_prev), (left_curr, bottom_curr)),
+        # Right edge
+        ((right_prev, top_prev), (right_curr, top_curr)),
+        ((right_prev, bottom_prev), (right_curr, bottom_curr)),
+        # Center point (for fallback)
+        ((int(x1_prev), int(y1_prev)), (int(x1_curr), int(y1_curr)))
+    ]
+    
+    for (p1_prev, p1_curr) in bbox_edges:
+        if line_intersects_segment(p1_prev, p1_curr, line_start, line_end):
+            return True
+    
+    return False
 
 def get_direction(p1, p2, line_start, line_end):
     """Determine passage direction (1 or -1)"""
@@ -179,17 +220,22 @@ while cap.isOpened():
                 
                 # Add position to history
                 track_history[track_id].append(center)
+                bbox_history[track_id].append((x, y, w, h))
                 
                 # Keep only last 10 positions
                 if len(track_history[track_id]) > 10:
                     track_history[track_id].pop(0)
+                if len(bbox_history[track_id]) > 10:
+                    bbox_history[track_id].pop(0)
                 
-                # Check line crossing
-                if len(track_history[track_id]) >= 2 and track_id not in crossed_ids:
-                    p1 = track_history[track_id][-2]
-                    p2 = track_history[track_id][-1]
+                # Check line crossing using bounding boxes
+                if len(bbox_history[track_id]) >= 2 and track_id not in crossed_ids:
+                    bbox1 = bbox_history[track_id][-2]
+                    bbox2 = bbox_history[track_id][-1]
                     
-                    if line_intersect(p1, p2, args.line_start, args.line_end):
+                    if line_intersect_bbox(bbox1, bbox2, args.line_start, args.line_end):
+                        p1 = track_history[track_id][-2]
+                        p2 = track_history[track_id][-1]
                         direction = get_direction(p1, p2, args.line_start, args.line_end)
                         # Reverse direction if requested
                         if args.reverse_direction:
@@ -201,11 +247,29 @@ while cap.isOpened():
                             print(f"Person counted! Total: {person_count}")
                 
                 if args.enable_window:
-                    # Draw tracking
-                    cv2.circle(frame, center, 5, (255, 0, 0), -1)
-                    cv2.putText(frame, f"ID: {track_id}", 
-                            (center[0], center[1] - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+                    # Draw bounding box
+                    left = int(x - w/2)
+                    right = int(x + w/2)
+                    top = int(y - h/2)
+                    bottom = int(y + h/2)
+                    
+                    # Choose color based on whether person has been counted
+                    color = (0, 255, 255) if track_id in crossed_ids else (255, 0, 0)  # Yellow if counted, Blue if not
+                    
+                    # Draw bounding box
+                    cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
+                    
+                    # Draw tracking center point
+                    cv2.circle(frame, center, 5, color, -1)
+                    
+                    # Draw track ID and status
+                    label = f"ID: {track_id}"
+                    if track_id in crossed_ids:
+                        label += " (COUNTED)"
+                    
+                    cv2.putText(frame, label, 
+                            (left, top - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
     if args.enable_window:
         # Display counter

@@ -47,13 +47,13 @@ or
 
 ```bash
 python main.py \
-    --video-path "video.mp4" \
-    --line-start "100,200" \
-    --line-end "500,200" \
+    --video-path "/home/alex/Documents/playground-supervision-people-counter/osaka/Avril/13-04-2025/Caméra 8/short_cam8_9h30_21h.avi" \
+    --line-start "850,1000" \
+    --line-end "1220,620" \
     --enable-window true \
     --window-scale 0.5 \
     --reverse-direction false \
-    --imgsz 640
+    --imgsz 640 \
     --device cuda
 ```
 
